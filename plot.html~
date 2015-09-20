@@ -1,0 +1,93 @@
+<html>
+<head>
+<script type="text/javascript" src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dygraph/1.1.1/dygraph-combined.js"></script>
+<script type="text/javascript" src="http://jquery-csv.googlecode.com/git/src/jquery.csv.js"></script>
+</head>
+<body>
+<form>
+Choose dataset:
+<select name="Dataset" class="dataset">
+<option value="color1.rtf" selected="selected">Scan 1</option>
+<option value="color2.rtf">Scan 2</option>
+<option value="color3.rtf">Scan 3</option>
+<option value="color4.rtf">Scan 4</option>
+</select>
+</form>
+<div id="div_g" style="width:600px; height:300px;"></div>
+<p>You can click-drag to zoom in on the color data.  Double-click to unzoom.</p>
+<script type="text/javascript">
+$(document).ready(function () {
+      var colors=[];
+      var data=[];
+      var annotations=[];
+      var g;
+
+      function update(name) {
+      $.ajax({
+        url: "https://raw.githubusercontent.com/swb1701/fll/master/colordata/"+name,
+        async: false,
+        success: function(csvd) {
+          colors = $.csv2Array(csvd);
+        },
+        dataType: "text",
+        complete: function() {
+        }
+      });
+      }
+
+      function redraw() {
+      data=[];
+      annotations=[];
+
+      /*
+      annotations.push( {
+        series:"Color",
+        x:"2000",
+        shortText: "W"
+      });
+      */
+
+      for (var i=0;i<colors.length;i++) {
+        data.push([i,colors[i]]);
+      }
+      //var highlight_start = 2200;
+      //var highlight_end = 2550;
+
+      g=new Dygraph(
+          document.getElementById("div_g"),
+          data,
+          {
+            labels: ['X', 'Color'],
+            animatedZooms: true,
+            /*
+            underlayCallback: function(canvas, area, g) {
+              var bottom_left = g.toDomCoords(highlight_start, -20);
+              var top_right = g.toDomCoords(highlight_end, +20);
+
+              var left = bottom_left[0];
+              var right = top_right[0];
+
+              canvas.fillStyle = "rgba(255, 255, 102, 1.0)";
+              canvas.fillRect(left, area.y, right - left, area.h);
+            }
+            */
+
+          }
+      );
+      g.setAnnotations(annotations);
+      }
+
+      $(".dataset").change(function() {
+        update($(this).val());
+        redraw();
+      });
+
+      update("color1.rtf");
+      redraw();
+
+    }
+);
+</script>
+</body>
+</html>
