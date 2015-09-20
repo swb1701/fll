@@ -8,11 +8,17 @@
 <form>
 Choose dataset:
 <select name="Dataset" class="dataset">
-<option value="color1.rtf" selected="selected">Scan 1</option>
-<option value="color2.rtf">Scan 2</option>
-<option value="color3.rtf">Scan 3</option>
-<option value="color4.rtf">Scan 4</option>
+<option value="color1.rtf" selected="selected">North from Safety Zone (Scan 1)</option>
+<option value="color2.rtf">North from Safety Zone (Scan 2)</option>
+<option value="color3.rtf">East from Safety Zone (Scan 1)</option>
+<option value="color4.rtf">East form Safety Zone (Scan 2)</option>
 </select>
+<br/>
+White/Black/White Detector:<br/>
+White Threshold:<input id="white" type="number" min="0" max="128" value="90"/>
+Black Threshold:<input id="black" type="number" min="0" max="128" value="20"/>
+Min Distance Between Peaks:<input id="minwidth" type="number" min="0" max="500" value="5"/>
+Max Distance Between Peaks:<input id="maxwidth" type="number" min="0" max="500" value="40"/>
 </form>
 <div id="div_g" style="width:600px; height:300px;"></div>
 <p>You can click-drag to zoom in on the color data.  Double-click to unzoom.</p>
@@ -22,6 +28,31 @@ $(document).ready(function () {
       var data=[];
       var annotations=[];
       var g;
+      var whitethresh=90;
+      var blackthresh=20;
+      var minwidth=5;
+      var maxwidth=40;
+
+      $("#white").change(function() {
+        whitethresh=$(this).val();
+        analyze();
+        redraw();
+      });
+      $("#black").change(function() {
+        blackthresh=$(this).val();
+        analyze();
+        redraw();
+      });
+      $("#minwidth").change(function() {
+        minwidth=$(this).val();
+        analyze();
+        redraw();
+      });
+      $("#maxwidth").change(function() {
+        maxwidth=$(this).val();
+        analyze();
+        redraw();
+      });
 
       function update(name) {
       $.ajax({
@@ -36,17 +67,32 @@ $(document).ready(function () {
       });
       }
 
+      function analyze() {
+        annotations=[];
+        var lastwhite=-1;
+        var lastblack=-1;
+        var hit=0;
+        for(var i=0;i<colors.length;i++) {
+          if (colors[i]>whitethresh) {
+            if (lastwhite>-1 && lastblack>-1) {
+              var dif=i-lastblack;
+              var dif2=lastblack-lastwhite;
+              if (dif>minwidth && dif<maxwidth && dif2>minwidth && dif2>maxwidth) {
+                hit=hit+1;
+                annotations.push({series:"Color",x:i,shortText:hit,tickHeight:-30});
+                lastwhite=-1;
+                lastblack=-1;
+              }
+            }
+            lastwhite=i;
+          } else if (colors[i]<blackthresh) {
+            lastblack=i;
+          }
+        }
+      }
+
       function redraw() {
       data=[];
-      annotations=[];
-
-      /*
-      annotations.push( {
-        series:"Color",
-        x:"2000",
-        shortText: "W"
-      });
-      */
 
       for (var i=0;i<colors.length;i++) {
         data.push([i,colors[i]]);
@@ -80,10 +126,12 @@ $(document).ready(function () {
 
       $(".dataset").change(function() {
         update($(this).val());
+        analyze();
         redraw();
       });
 
       update("color1.rtf");
+      analyze();
       redraw();
 
     }
